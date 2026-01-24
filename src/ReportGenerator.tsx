@@ -19,6 +19,7 @@ import {
   Upload,
   User,
   Building,
+  X
 } from 'lucide-react';
 
 // --- Types ---
@@ -129,10 +130,12 @@ type ReportData = {
   assets: Asset[];
   performance: {
     nasAnalysis: string;
+    cpuAnalysis: string;
     veilAnalysis: string;
     webAnalysis: string;
   };
   evidenceList: EvidenceItem[];
+  evidenceImages: string[];
   news: NewsItem[];
   changes: ChangeLog[];
   roadmap: {
@@ -151,7 +154,7 @@ const initialData: ReportData = {
     clientName: '株式会社サンプル・プロジェクト',
     createDate: '2025年06月01日',
     author: '山田 太郎 (Senior Security Consultant)',
-    companyName: 'KAKEHASHI ASIA inc.', 
+    companyName: 'KAKEHASHI ASIA INC.', 
   },
   summary: {
     score: 'S',
@@ -197,6 +200,7 @@ const initialData: ReportData = {
   ],
   performance: {
     nasAnalysis: 'Re:NAS (ZFSプール) の使用率は50%に達しました。過去5ヶ月のトレンドから分析すると、月間約2%の増加傾向にあります。現在のペースであれば、今後18ヶ月間はディスク増設なしで運用可能です。',
+    cpuAnalysis: '全体的に低負荷で推移していますが、4月に一時的なピーク（65%）を記録しました。これは四半期ごとのフルバックアップ処理と、Re:NASのScrub処理（データ整合性チェック）が重なったためであり、正常な動作です。',
     veilAnalysis: 'Re:Veil全端末において、GrapheneOSの最新パッチが適用されていることを確認しました。メモリ使用量、バッテリー劣化度ともに正常範囲内であり、ハードウェア起因のトラブル予兆はありません。',
     webAnalysis: '外部公開Webサーバーへのアクセス数は安定しており、DDoS等の攻撃予兆は見られません。WAFによる遮断ログの9割は海外IPからの無差別スキャンであり、実害はありません。',
   },
@@ -205,6 +209,7 @@ const initialData: ReportData = {
     { id: 'ev2', title: "EDR / Antivirus", iconType: 'shield', status: "Active", desc: "全エンドポイントにて最新のシグネチャ適用を確認。未検知の脅威なし。", date: '2025/06/01' },
     { id: 'ev3', title: "Quarterly Restore Test", iconType: 'activity', status: "Verified", desc: "四半期復元テストを実施。Re:NAS上のランダムな10ファイルをリストアし、ハッシュ値の一致を確認。", date: "2025/05/28" },
   ],
+  evidenceImages: [], // Initial empty images
   news: [
     {
       id: 'n1',
@@ -249,17 +254,17 @@ const initialData: ReportData = {
     currency: 'USD',
     taxRate: 0,
     logoSrc: null,
-    senderName: 'KAKEHASHI ASIA inc.',
-    senderDetails: 'Chiba, Japan\nContact: support@example.com',
+    senderName: 'KAKEHASHI ASIA INC.',
+    senderDetails: '7/F Finman Bldg.,131 Tordesillas St., Bel Air, Makati,1200 METRO MANILA,PHILIPPINES\nTax ID: 010-908-840-00000\nPhone: +63 09178171702',
     clientName: 'Client Corp (Global)',
     clientDetails: 'Manila, Philippines\nAttn: Finance Dept',
-    bankName: 'Mizuho Bank, Ltd.',
-    bankBranch: 'Marunouchi Branch',
-    bankSwift: 'MHCBJPJT',
-    bankType: 'Savings',
-    bankNo: '1234567890',
-    bankHolder: 'KAKEHASHI ASIA INC',
-    notes: 'Please remit payment in USD. Bank transfer fees shall be borne by the payer.',
+    bankName: 'East West Banking Corp.',
+    bankBranch: 'Benavidez Branch',
+    bankSwift: 'EWBCPHIMMXXX',
+    bankType: 'Ordinary',
+    bankNo: '200056876412',
+    bankHolder: 'KAKEHASHI ASIA INC.',
+    notes: 'Please remit the payment by the due date.\nBank fees, if any, are to be borne by the payer.',
     items: [
       { id: '1', desc: 'Monthly Security Consulting Fee (Basic Plan)', qty: 1, unit: 4500 },
       { id: '2', desc: 'Re:Veil Management License (May Usage)', qty: 2, unit: 45 },
@@ -462,6 +467,7 @@ export default function ReportGenerator() {
   const [editSection, setEditSection] = useState<string>('basic');
   const [invoiceSubTab, setInvoiceSubTab] = useState<'info' | 'sender' | 'client' | 'bank' | 'items'>('info');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const evidenceImageInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to update deeply nested state
   const handleMetaChange = (field: keyof typeof data.meta, value: string) => {
@@ -482,8 +488,7 @@ export default function ReportGenerator() {
 
   // Asset Actions
   const updateAsset = (index: number, field: keyof Asset, value: string) => {
-    const newAssets = [...data.assets];
-    (newAssets[index] as any)[field] = value;
+    const newAssets = data.assets.map((asset, i) => i === index ? { ...asset, [field]: value } : asset);
     setData({ ...data, assets: newAssets });
   };
   const addAsset = () => {
@@ -499,23 +504,37 @@ export default function ReportGenerator() {
   };
   const removeAsset = (index: number) => {
     if (confirm('削除しますか？')) {
-      const newAssets = [...data.assets];
-      newAssets.splice(index, 1);
+      const newAssets = data.assets.filter((_, i) => i !== index);
       setData({ ...data, assets: newAssets });
     }
   };
 
   // Evidence Actions
   const updateEvidence = (index: number, field: keyof EvidenceItem, value: string) => {
-    const newEvidence = [...data.evidenceList];
-    (newEvidence[index] as any)[field] = value;
+    const newEvidence = data.evidenceList.map((ev, i) => i === index ? { ...ev, [field]: value } : ev);
     setData({ ...data, evidenceList: newEvidence });
+  };
+  const handleEvidenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        setData({ ...data, evidenceImages: [...data.evidenceImages, ev.target.result as string] });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  const removeEvidenceImage = (index: number) => {
+    if(confirm('画像を削除しますか？')) {
+      const newImages = data.evidenceImages.filter((_, i) => i !== index);
+      setData({ ...data, evidenceImages: newImages });
+    }
   };
 
   // Change Log Actions
   const updateChange = (index: number, field: keyof ChangeLog, value: string) => {
-    const newChanges = [...data.changes];
-    (newChanges[index] as any)[field] = value;
+    const newChanges = data.changes.map((log, i) => i === index ? { ...log, [field]: value } : log);
     setData({ ...data, changes: newChanges });
   };
   const addChange = () => {
@@ -531,16 +550,14 @@ export default function ReportGenerator() {
   };
   const removeChange = (index: number) => {
     if (confirm('この履歴を削除しますか？')) {
-      const newChanges = [...data.changes];
-      newChanges.splice(index, 1);
+      const newChanges = data.changes.filter((_, i) => i !== index);
       setData({ ...data, changes: newChanges });
     }
   };
 
   // News Actions
   const updateNews = (index: number, field: keyof NewsItem, value: string) => {
-    const newNews = [...data.news];
-    (newNews[index] as any)[field] = value;
+    const newNews = data.news.map((item, i) => i === index ? { ...item, [field]: value } : item);
     setData({ ...data, news: newNews });
   };
   const addNews = () => {
@@ -551,8 +568,7 @@ export default function ReportGenerator() {
     setData({ ...data, news: [...data.news, newNews] });
   };
   const removeNews = (index: number) => {
-    const newNews = [...data.news];
-    newNews.splice(index, 1);
+    const newNews = data.news.filter((_, i) => i !== index);
     setData({ ...data, news: newNews });
   };
 
@@ -561,8 +577,7 @@ export default function ReportGenerator() {
     setData({ ...data, invoice: { ...data.invoice, [field]: value } });
   };
   const updateInvoiceItem = (index: number, field: keyof InvoiceItem, value: any) => {
-    const newItems = [...data.invoice.items];
-    (newItems[index] as any)[field] = value;
+    const newItems = data.invoice.items.map((item, i) => i === index ? { ...item, [field]: value } : item);
     setData({ ...data, invoice: { ...data.invoice, items: newItems } });
   };
   const addInvoiceItem = () => {
@@ -570,11 +585,10 @@ export default function ReportGenerator() {
     setData({ ...data, invoice: { ...data.invoice, items: [...data.invoice.items, newItem] } });
   };
   const removeInvoiceItem = (index: number) => {
-    const newItems = [...data.invoice.items];
-    newItems.splice(index, 1);
+    const newItems = data.invoice.items.filter((_, i) => i !== index);
     setData({ ...data, invoice: { ...data.invoice, items: newItems } });
   };
-  
+   
   // Logo Upload
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
@@ -662,14 +676,14 @@ export default function ReportGenerator() {
               {id: 'invoice', label: '請求書'},
             ].map((item) => (
                <button
-                  key={item.id}
-                  onClick={() => setEditSection(item.id)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded whitespace-nowrap transition-colors ${
-                    editSection === item.id ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  {item.label}
-                </button>
+                 key={item.id}
+                 onClick={() => setEditSection(item.id)}
+                 className={`px-3 py-1.5 text-xs font-bold rounded whitespace-nowrap transition-colors ${
+                   editSection === item.id ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-50'
+                 }`}
+               >
+                 {item.label}
+               </button>
             ))}
           </div>
 
@@ -759,10 +773,13 @@ export default function ReportGenerator() {
                       <div key={idx} className="flex gap-2 mb-2 items-center">
                         <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor: stat.color}}></span>
                         <input className="border p-1 rounded text-xs w-24" value={stat.name} onChange={(e) => {
-                          const newStats = [...data.threatStats]; newStats[idx].name = e.target.value; setData({...data, threatStats: newStats});
+                          const newStats = data.threatStats.map((s, i) => i === idx ? { ...s, name: e.target.value } : s);
+                          setData({...data, threatStats: newStats});
                         }} />
                         <input className="border p-1 rounded text-xs w-20" type="number" value={stat.count} onChange={(e) => {
-                          const newStats = [...data.threatStats]; newStats[idx].count = parseInt(e.target.value); setData({...data, threatStats: newStats});
+                          const val = parseInt(e.target.value);
+                          const newStats = data.threatStats.map((s, i) => i === idx ? { ...s, count: isNaN(val) ? 0 : val } : s);
+                          setData({...data, threatStats: newStats});
                         }} />
                       </div>
                     ))}
@@ -786,9 +803,14 @@ export default function ReportGenerator() {
                     <div className="text-xs font-bold text-slate-600 mb-2 uppercase">③ NAS容量推移 (棒グラフ / P.6)</div>
                     {data.resourceStats.nasStorage.map((stat, idx) => (
                       <div key={idx} className="flex gap-2 mb-2 items-center">
-                        <input className="border p-1 rounded text-xs w-16 bg-slate-50" value={stat.month} readOnly />
+                        <input className="border p-1 rounded text-xs w-16" value={stat.month} onChange={(e) => {
+                           const newStats = data.resourceStats.nasStorage.map((s, i) => i === idx ? { ...s, month: e.target.value } : s);
+                           setData({...data, resourceStats: {...data.resourceStats, nasStorage: newStats}});
+                        }} />
                         <input className="border p-1 rounded text-xs w-20" type="number" value={stat.value} onChange={(e) => {
-                          const newStats = [...data.resourceStats.nasStorage]; newStats[idx].value = parseInt(e.target.value); setData({...data, resourceStats: {...data.resourceStats, nasStorage: newStats}});
+                          const val = parseInt(e.target.value);
+                          const newStats = data.resourceStats.nasStorage.map((s, i) => i === idx ? { ...s, value: isNaN(val) ? 0 : val } : s);
+                          setData({...data, resourceStats: {...data.resourceStats, nasStorage: newStats}});
                         }} />
                         <span className="text-xs text-slate-400">%</span>
                       </div>
@@ -799,9 +821,14 @@ export default function ReportGenerator() {
                     <div className="text-xs font-bold text-slate-600 mb-2 uppercase">④ CPU使用率推移 (棒グラフ / P.6)</div>
                     {data.resourceStats.cpuUsage.map((stat, idx) => (
                       <div key={idx} className="flex gap-2 mb-2 items-center">
-                        <input className="border p-1 rounded text-xs w-16 bg-slate-50" value={stat.month} readOnly />
+                        <input className="border p-1 rounded text-xs w-16" value={stat.month} onChange={(e) => {
+                           const newStats = data.resourceStats.cpuUsage.map((s, i) => i === idx ? { ...s, month: e.target.value } : s);
+                           setData({...data, resourceStats: {...data.resourceStats, cpuUsage: newStats}});
+                        }}/>
                         <input className="border p-1 rounded text-xs w-20" type="number" value={stat.value} onChange={(e) => {
-                          const newStats = [...data.resourceStats.cpuUsage]; newStats[idx].value = parseInt(e.target.value); setData({...data, resourceStats: {...data.resourceStats, cpuUsage: newStats}});
+                          const val = parseInt(e.target.value);
+                          const newStats = data.resourceStats.cpuUsage.map((s, i) => i === idx ? { ...s, value: isNaN(val) ? 0 : val } : s);
+                          setData({...data, resourceStats: {...data.resourceStats, cpuUsage: newStats}});
                         }} />
                         <span className="text-xs text-slate-400">%</span>
                       </div>
@@ -876,6 +903,10 @@ export default function ReportGenerator() {
                     <textarea className="w-full border p-2 rounded text-sm h-24" value={data.performance.nasAnalysis} onChange={(e) => handlePerformanceChange('nasAnalysis', e.target.value)} />
                   </div>
                    <div>
+                    <label className="text-xs font-bold">Trend Analysis (CPU / System Load)</label>
+                    <textarea className="w-full border p-2 rounded text-sm h-24" value={data.performance.cpuAnalysis} onChange={(e) => handlePerformanceChange('cpuAnalysis', e.target.value)} />
+                  </div>
+                   <div>
                     <label className="text-xs font-bold">Re:Veil (Mobile) Analysis</label>
                     <textarea className="w-full border p-2 rounded text-sm h-24" value={data.performance.veilAnalysis} onChange={(e) => handlePerformanceChange('veilAnalysis', e.target.value)} />
                   </div>
@@ -914,6 +945,37 @@ export default function ReportGenerator() {
                     </div>
                   </div>
                 ))}
+
+                 {/* Image Upload for Evidence */}
+                <div className="pt-4 border-t border-slate-200">
+                  <div className="text-xs font-bold text-slate-400 uppercase mb-2">Evidence Screenshots</div>
+                  <div className="space-y-2">
+                     {data.evidenceImages.map((img, idx) => (
+                       <div key={idx} className="relative group">
+                          <img src={img} className="w-full rounded border border-slate-200 h-32 object-cover" alt="Evidence" />
+                          <button 
+                            onClick={() => removeEvidenceImage(idx)}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={14}/>
+                          </button>
+                       </div>
+                     ))}
+                     <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        ref={evidenceImageInputRef} 
+                        onChange={handleEvidenceImageUpload}
+                     />
+                     <button 
+                        onClick={() => evidenceImageInputRef.current?.click()}
+                        className="w-full bg-slate-100 border border-dashed border-slate-300 rounded p-3 text-xs text-slate-500 hover:bg-slate-200 flex items-center justify-center gap-2"
+                     >
+                        <Upload size={14}/> Add Screenshot
+                     </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1067,7 +1129,10 @@ export default function ReportGenerator() {
                     </div>
                     <div>
                       <label className="text-[10px] text-slate-400">Tax Rate (%)</label>
-                      <input type="number" className="w-full border p-1 rounded" value={data.invoice.taxRate} onChange={(e) => handleInvoiceChange('taxRate', parseFloat(e.target.value))} />
+                      <input type="number" className="w-full border p-1 rounded" value={data.invoice.taxRate} onChange={(e) => {
+                         const val = parseFloat(e.target.value);
+                         handleInvoiceChange('taxRate', isNaN(val) ? 0 : val);
+                      }} />
                     </div>
                     <div>
                       <label className="text-[10px] text-slate-400 mb-1 block">Logo Image</label>
@@ -1125,8 +1190,14 @@ export default function ReportGenerator() {
                           <button onClick={() => removeInvoiceItem(idx)} className="absolute top-0 right-0 text-slate-300 hover:text-red-500"><Trash2 size={14}/></button>
                           <input className="w-[90%] border p-1 rounded mb-1 text-sm font-bold" placeholder="Description" value={item.desc} onChange={(e) => updateInvoiceItem(idx, 'desc', e.target.value)} />
                           <div className="flex gap-2">
-                            <input type="number" className="w-20 border p-1 rounded text-right" placeholder="Qty" value={item.qty} onChange={(e) => updateInvoiceItem(idx, 'qty', parseInt(e.target.value))} />
-                            <input type="number" className="w-28 border p-1 rounded text-right" placeholder="Unit Price" value={item.unit} onChange={(e) => updateInvoiceItem(idx, 'unit', parseInt(e.target.value))} />
+                            <input type="number" className="w-20 border p-1 rounded text-right" placeholder="Qty" value={item.qty} onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              updateInvoiceItem(idx, 'qty', isNaN(val) ? 0 : val);
+                            }} />
+                            <input type="number" className="w-28 border p-1 rounded text-right" placeholder="Unit Price" value={item.unit} onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              updateInvoiceItem(idx, 'unit', isNaN(val) ? 0 : val);
+                            }} />
                           </div>
                         </div>
                       ))}
@@ -1225,7 +1296,7 @@ export default function ReportGenerator() {
             <PageHeader meta={data.meta} pageNum={6} totalPages={totalPages} title="Performance Analysis" />
             <SectionHeader number="4" title="リソース＆パフォーマンス分析" subTitle="Capacity Planning & Trends" />
             <div className="mb-10 break-inside-avoid"><h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><HardDrive className="w-5 h-5 text-indigo-500"/>Re:NAS Storage Growth (ZFS Pool)</h3><div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-4"><SimpleBarChart data={data.resourceStats.nasStorage} color="#6366f1" unit="%" /></div><div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 text-sm text-slate-700 leading-relaxed rounded-r"><strong>【専門家による分析】</strong><br/>{data.performance.nasAnalysis}</div></div>
-            <div className="mb-8 break-inside-avoid"><h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><Cpu className="w-5 h-5 text-blue-500"/>System Load Average (CPU)</h3><div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-4"><SimpleBarChart data={data.resourceStats.cpuUsage} color="#3b82f6" unit="%" /></div><div className="p-4 text-sm text-slate-600 leading-relaxed border border-slate-200 rounded"><strong>【トレンド分析】</strong><br/>全体的に低負荷で推移していますが、4月に一時的なピーク（65%）を記録しました。これは四半期ごとのフルバックアップ処理と、Re:NASのScrub処理（データ整合性チェック）が重なったためであり、正常な動作です。</div></div>
+            <div className="mb-8 break-inside-avoid"><h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><Cpu className="w-5 h-5 text-blue-500"/>System Load Average (CPU)</h3><div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-4"><SimpleBarChart data={data.resourceStats.cpuUsage} color="#3b82f6" unit="%" /></div><div className="p-4 text-sm text-slate-600 leading-relaxed border border-slate-200 rounded"><strong>【トレンド分析】</strong><br/>{data.performance.cpuAnalysis}</div></div>
           </div>
           <div className="page-break" />
 
@@ -1234,7 +1305,25 @@ export default function ReportGenerator() {
              <PageHeader meta={data.meta} pageNum={7} totalPages={totalPages} title="Operational Evidence" />
              <SectionHeader number="5" title="運用証跡 (Evidence)" subTitle="Proof of Protection" />
              <div className="grid grid-cols-1 gap-6">{data.evidenceList.map((ev, i) => (<div key={i} className="flex gap-4 p-4 border border-slate-200 rounded-lg shadow-sm break-inside-avoid"><div className="bg-slate-100 p-4 rounded flex items-center justify-center text-slate-500 w-16 h-16 shrink-0">{ev.iconType === 'db' ? <Database/> : ev.iconType === 'shield' ? <ShieldCheck/> : <Activity/>}</div><div className="flex-grow"><div className="flex justify-between mb-1"><h4 className="font-bold text-slate-800">{ev.title}</h4><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">{ev.status}</span></div><p className="text-xs text-slate-500 mb-2 font-mono">Verified At: {ev.date}</p><p className="text-sm text-slate-600">{ev.desc}</p></div></div>))}</div>
-             <div className="mt-8 p-8 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 text-center text-slate-400"><ImageIcon className="mx-auto h-12 w-12 text-slate-300 mb-2"/><span className="text-sm font-bold block">Additional Evidence Screenshots</span><span className="text-xs">(Backup Logs, System Reports, etc.)</span></div>
+             
+             {/* Evidence Images Grid */}
+             <div className="mt-8 p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
+               {data.evidenceImages.length > 0 ? (
+                 <div className="grid grid-cols-2 gap-4">
+                   {data.evidenceImages.map((img, idx) => (
+                     <div key={idx} className="relative bg-white p-2 shadow-sm rounded border border-slate-200">
+                        <img src={img} className="w-full h-auto rounded" alt={`Evidence ${idx + 1}`} />
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="text-center text-slate-400 py-8">
+                   <ImageIcon className="mx-auto h-12 w-12 text-slate-300 mb-2"/>
+                   <span className="text-sm font-bold block">Additional Evidence Screenshots</span>
+                   <span className="text-xs">(No images attached)</span>
+                 </div>
+               )}
+             </div>
           </div>
           <div className="page-break" />
 
