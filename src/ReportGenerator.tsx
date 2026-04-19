@@ -359,7 +359,7 @@ const GuideBox = ({ page, title, desc }: { page: string; title: string; desc: st
 );
 
 const OverflowWarningModal = ({ warnings, onConfirm, onCancel }: { warnings: string[]; onConfirm: () => void; onCancel: () => void }) => (
-  <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+  <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 print:hidden">
     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
       <div className="flex items-center gap-3 mb-4">
         <div className="bg-amber-100 p-2 rounded-full"><AlertCircle className="w-6 h-6 text-amber-600" /></div>
