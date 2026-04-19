@@ -250,7 +250,7 @@ const SimplePieChart = ({ data }: { data: ThreatStat[] }) => {
 };
 
 const SimpleBarChart = ({ data, color = '#3b82f6', unit = '%' }: { data: ResourceStat[]; color?: string; unit?: string }) => {
-  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const maxValue = Math.max(...data.map(d => d.value), 100);
   return (
     <div className="w-full px-4 pt-4 pb-2">
       <div className="flex items-end justify-between gap-2 h-32 border-b border-slate-200">
