@@ -154,7 +154,6 @@ const buildInitialData = (): ReportData => {
     news: [
       { id: 'n1', title: 'スマートフォンの位置情報を悪用した標的型攻撃', date: '2025/12/20', source: 'Global Cyber Security Watch', content: '一般的な商用OSの脆弱性を突き、位置情報やマイク音声を盗聴するスパイウェアが確認されています。特定の企業幹部を狙うケースが増加傾向にあります。', impact: '【貴社への影響】貴社採用の「Re:Veil (GrapheneOS)」は、OSレベルでトラッキング防止機能が強化されており、当該スパイウェアの影響を受けません。' },
       { id: 'n2', title: 'ランサムウェアによるNAS機器への攻撃激化', date: '2025/12/15', source: 'TechDefense Report', content: '未修正の脆弱性を放置したNAS機器がランサムウェアに感染し、バックアップデータごと暗号化される被害が多発しています。', impact: '【貴社への影響】「Re:NAS」はDebianベースの堅牢化設定に加え、定期的な自動アップデートが適用されており、脆弱性は解消済みです。' },
-      { id: 'n3', title: 'Webサイト改ざん攻撃のトレンド変化', date: '2025/12/10', source: 'WebSec Journal', content: 'CMSのプラグイン脆弱性を狙ったWebサイト改ざん攻撃が増えています。見た目は変わらずとも、閲覧者にマルウェアを配布するサイトに書き換えられる事例です。', impact: '【貴社への影響】貴社HPは簡易構成（静的サイト中心）で運用されており、攻撃対象となる動的プラグインを使用していないため、リスクは極めて限定的です。' },
     ],
     changes: [
       { id: '1', date: '05/10', type: '定期メンテ', content: 'Re:NAS セキュリティパッチ適用 (Debian Security Update)', result: '完了', owner: '山田' },
@@ -573,7 +572,7 @@ export default function ReportGenerator() {
     return { subtotal, tax, total: subtotal + tax };
   }, [data.invoice]);
 
-  const totalPages = 11;
+  const totalPages = 12;
 
   // ============================================================
   // RENDER
@@ -1033,9 +1032,9 @@ export default function ReportGenerator() {
               {[
                 { p: 3, t: 'エグゼクティブ・サマリー' }, { p: 4, t: 'セキュリティインシデント統計' },
                 { p: 5, t: '資産稼働状況詳細' }, { p: 6, t: 'リソース＆パフォーマンス分析' },
-                { p: 7, t: '運用証跡・エビデンス' }, { p: 8, t: '変更管理・メンテナンス履歴' },
-                { p: 9, t: 'Global Threat Intelligence' }, { p: 10, t: '戦略的ロードマップ＆提言' },
-                { p: 11, t: '請求書 (Invoice)' },
+                { p: 7, t: '運用証跡・エビデンス' }, { p: 8, t: 'デバイス＆ネットワーク分析' },
+                { p: 9, t: '変更管理・メンテナンス履歴' }, { p: 10, t: 'Global Threat Intelligence' },
+                { p: 11, t: '戦略的ロードマップ＆提言' }, { p: 12, t: '請求書 (Invoice)' },
               ].map(item => (
                 <div key={item.p} className="flex items-baseline border-b border-dashed border-slate-300 pb-2">
                   <span className="text-lg font-bold text-slate-700">{item.t}</span>
@@ -1172,10 +1171,14 @@ export default function ReportGenerator() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="page-break" />
 
-            {/* Device & Network Analysis */}
-            <div className="mt-8 space-y-4">
-              <h3 className="text-sm font-bold text-slate-500 uppercase border-b border-slate-200 pb-2">Device & Network Analysis</h3>
+          {/* P.8 Device & Network Analysis + Evidence Images */}
+          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
+            <PageHeader meta={data.meta} pageNum={8} totalPages={totalPages} title="Device & Network Analysis" />
+            <SectionHeader number="5-2" title="デバイス＆ネットワーク分析" subTitle="Device Integrity & Network Status" />
+            <div className="space-y-4 mb-8">
               <div className="flex gap-4 p-4 border border-slate-200 rounded-lg shadow-sm break-inside-avoid">
                 <div className="bg-teal-100 p-4 rounded flex items-center justify-center text-teal-600 w-16 h-16 shrink-0"><Smartphone size={24} /></div>
                 <div className="flex-grow">
@@ -1191,9 +1194,8 @@ export default function ReportGenerator() {
                 </div>
               </div>
             </div>
-
             {/* Evidence Images */}
-            <div className="mt-8 p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
+            <div className="p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
               {data.evidenceImages.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
                   {data.evidenceImages.map((img, idx) => (
@@ -1213,9 +1215,9 @@ export default function ReportGenerator() {
           </div>
           <div className="page-break" />
 
-          {/* P.8 Changes */}
+          {/* P.9 Changes */}
           <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={8} totalPages={totalPages} title="Change Management" />
+            <PageHeader meta={data.meta} pageNum={9} totalPages={totalPages} title="Change Management" />
             <SectionHeader number="6" title="変更管理・メンテナンス履歴" subTitle="System Audit Log" />
             <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
               <table className="w-full text-left text-sm">
@@ -1247,9 +1249,9 @@ export default function ReportGenerator() {
           </div>
           <div className="page-break" />
 
-          {/* P.9 Intelligence */}
+          {/* P.10 Intelligence */}
           <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={9} totalPages={totalPages} title="Global Intelligence" />
+            <PageHeader meta={data.meta} pageNum={10} totalPages={totalPages} title="Global Intelligence" />
             <SectionHeader number="7" title="Global Security Intelligence" subTitle="Threat Trends & Risk Analysis" />
             <div className="space-y-6">
               {data.news.map(item => (
@@ -1272,10 +1274,10 @@ export default function ReportGenerator() {
           </div>
           <div className="page-break" />
 
-          {/* P.10 Roadmap */}
+          {/* P.11 Roadmap */}
           <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm] flex flex-col justify-between min-h-[297mm]">
             <div>
-              <PageHeader meta={data.meta} pageNum={10} totalPages={totalPages} title="Strategic Roadmap" />
+              <PageHeader meta={data.meta} pageNum={11} totalPages={totalPages} title="Strategic Roadmap" />
               <SectionHeader number="8" title="戦略的ロードマップ＆提言" subTitle="Future Strategy & Recommendations" />
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4"><List className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-bold text-slate-500 uppercase">Next Month's Focus</h3></div>
@@ -1293,10 +1295,9 @@ export default function ReportGenerator() {
           </div>
           <div className="page-break" />
 
-          {/* P.11 Invoice */}
+          {/* P.12 Invoice */}
           <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[13mm] flex flex-col min-h-[297mm] text-slate-800">
-            <div className="flex justify-between items-start border-b-4 border-slate-800 pb-6 mb-8">
-              <div>
+            <div className="flex justify-between items-start border-b-4 border-slate-800 pb-6 mb-8">              <div>
                 <div className="text-4xl font-black text-slate-900 tracking-tight mb-2">INVOICE</div>
                 <div className="text-xs text-slate-500 font-bold uppercase tracking-widest">{data.meta.companyName}</div>
               </div>
