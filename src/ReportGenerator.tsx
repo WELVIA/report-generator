@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import './report-executive.css';
 import {
-  Printer, ShieldCheck, Globe, TrendingUp, Database, Smartphone,
-  Info, Plus, Trash2, List, Cpu, HardDrive, Image as ImageIcon,
-  AlertTriangle, Activity, CreditCard, Upload, User, Building, X,
+  Printer, ShieldCheck, Globe, Database, Smartphone,
+  Info, Plus, Trash2,
+  AlertTriangle, Activity, Upload, User, Building, X,
   Download, FolderOpen, GripVertical, AlertCircle
 } from 'lucide-react';
 
@@ -83,7 +84,7 @@ const getPrevMonthLabels = (year: string, month: string, count: number): string[
       targetMonth += 12;
       targetYear -= 1;
     }
-    labels.push(`${targetMonth}月`);
+    labels.push(`${targetYear}/${String(targetMonth).padStart(2, '0')}`);
   }
   return labels;
 };
@@ -102,88 +103,111 @@ const fmtMoney = (amount: number, currency: 'JPY' | 'USD' | 'PHP') => {
 // ============================================================
 // INITIAL DATA
 // ============================================================
+// ※ 公開リポジトリのため、実在の口座番号・Tax ID・電話番号などは初期値に書かないこと。
+//   実データは JSON ファイル側で管理する。
 const buildInitialData = (): ReportData => {
   const meta = getTodayMeta();
   const labels = getPrevMonthLabels(meta.year, meta.month, GRAPH_MONTHS);
   return {
     meta: {
       ...meta,
-      clientName: '株式会社サンプル・プロジェクト',
-      author: '山田 太郎 (Senior Security Consultant)',
+      clientName: '（顧客名）',
+      author: '（担当コンサルタント名）',
       companyName: 'KAKEHASHI ASIA INC.',
     },
     summary: {
-      score: 'S', uptime: '100%', threatsBlocked: '14,280', backupStatus: '全日成功',
-      comment: '当月において、貴社の事業運営に影響を与えるシステム停止、およびセキュリティインシデントは皆無でした。\n\n特筆すべき点として、Re:NAS（ファイルサーバー）の定期セキュリティアップデートにおきましても、冗長構成を活かした無停止メンテナンスに成功しており、データ保全性は極めて高い状態です。\n\nまた、Re:Veil（スマートフォン）全台のOSバージョン整合性も確認済みであり、紛失・盗難などのインシデント報告もありません。',
+      score: 'A', uptime: '99.9%', threatsBlocked: '0', backupStatus: '全日成功',
+      comment: '（当月の総評を記入）\n\n例：当月において、事業運営に影響を与えるシステム停止およびセキュリティインシデントは確認されませんでした。',
     },
     threatStats: [
-      { name: 'Port Scan', count: 8500, color: '#64748b' },
-      { name: 'SQL Injection', count: 1200, color: '#ef4444' },
-      { name: 'XSS Attempt', count: 800, color: '#f59e0b' },
-      { name: 'Malware Download', count: 150, color: '#8b5cf6' },
-      { name: 'Brute Force', count: 3630, color: '#3b82f6' },
+      { name: 'Port Scan', count: 0, color: '#1E3A5F' },
+      { name: 'Brute Force', count: 0, color: '#A8874F' },
+      { name: 'Known Malicious IP', count: 0, color: '#5B7083' },
+      { name: 'Other', count: 0, color: '#C9BFA8' },
     ],
     securityAnalysis: {
-      globalIpTitle: 'Internal Network Monitoring',
-      globalIpComment: '海外からの不正アクセス試行が全体の92%を占めています。Geo-IPフィルタリングにより、業務に関係のない国からのアクセスをネットワーク境界でドロップしており、リソース消費を最小限に抑えています。',
-      botDefenseTitle: 'Access Control Monitoring',
-      botDefenseComment: '既知のBotネットからのスキャン行為（Port 22, 443等）を検知。IPレピュテーションベースのブラックリストにより、攻撃の前段階である「偵察行為」を無効化しました。',
+      globalIpTitle: 'Perimeter Defense（境界防御）',
+      globalIpComment: '（外部からのアクセス試行の傾向と遮断状況を記入）',
+      botDefenseTitle: 'Reconnaissance Blocking（偵察行為の遮断）',
+      botDefenseComment: '（スキャン・総当たり攻撃などの検知と対処を記入）',
     },
     resourceStats: {
-      nasStorage: labels.map((month, i) => ({ month, value: [45, 48, 50][i] ?? 50 })),
-      cpuUsage:   labels.map((month, i) => ({ month, value: [35, 65, 40][i] ?? 40 })),
+      nasStorage: labels.map(month => ({ month, value: 0 })),
+      cpuUsage:   labels.map(month => ({ month, value: 0 })),
     },
     assets: [
-      { id: 'NAS-01', hostName: 'Re:NAS-Main', role: 'セキュアNAS', os: 'Debian 12 (Hardened)', status: 'Healthy', detail: 'ZFS Pool Status: ONLINE (No Errors), Scrub完了: 2025/05/28' },
-      { id: 'WEB-01', hostName: 'Corp-HP', role: '簡易HP (Web)', os: 'Debian / Nginx', status: 'Healthy', detail: 'WAF有効, SSL証明書有効期限: 残り320日' },
-      { id: 'MOB-001', hostName: 'Re:Veil-User01', role: 'セキュアスマホ', os: 'GrapheneOS', status: 'Healthy', detail: 'Auditor App: Verified, 最終同期: 2時間前' },
-      { id: 'MOB-002', hostName: 'Re:Veil-User02', role: 'セキュアスマホ', os: 'GrapheneOS', status: 'Healthy', detail: 'Auditor App: Verified, 最終同期: 5時間前' },
+      { id: 'NAS-01', hostName: 'Re:NAS-Main', role: 'セキュアNAS', os: 'OpenMediaVault 8', status: 'Healthy', detail: 'RAID5: clean / SMART: PASSED' },
+      { id: 'MOB-001', hostName: 'Re:Veil-01', role: 'セキュアスマホ', os: 'GrapheneOS', status: 'Healthy', detail: 'Auditor: Verified' },
+      { id: 'MOB-002', hostName: 'Re:Veil-02', role: 'セキュアスマホ', os: 'GrapheneOS', status: 'Healthy', detail: 'Auditor: Verified' },
     ],
     performance: {
-      nasAnalysis: 'Re:NAS (ZFSプール) の使用率は50%に達しました。過去3ヶ月のトレンドから分析すると、月間約2%の増加傾向にあります。現在のペースであれば、今後18ヶ月間はディスク増設なしで運用可能です。',
-      cpuAnalysis: '全体的に低負荷で推移していますが、先月に一時的なピーク（65%）を記録しました。これは四半期ごとのフルバックアップ処理と、Re:NASのScrub処理（データ整合性チェック）が重なったためであり、正常な動作です。',
-      veilAnalysis: 'Re:Veil全端末において、GrapheneOSの最新パッチが適用されていることを確認しました。メモリ使用量、バッテリー劣化度ともに正常範囲内であり、ハードウェア起因のトラブル予兆はありません。',
-      webAnalysis: '外部公開Webサーバーへのアクセス数は安定しており、DDoS等の攻撃予兆は見られません。WAFによる遮断ログの9割は海外IPからの無差別スキャンであり、実害はありません。',
+      nasAnalysis: '（容量推移と増設時期の見通しを記入）',
+      cpuAnalysis: '（負荷の推移とピークの要因を記入）',
+      veilAnalysis: '（OSアップデート適用状況・Auditor検証結果を記入）',
+      webAnalysis: '',
     },
     evidenceList: [
-      { id: 'ev1', title: 'Immutable Backup', iconType: 'db', status: 'Success', desc: 'ランサムウェア対策済みの不変ストレージへのバックアップ完了を確認。', date: '2025/06/01' },
-      { id: 'ev2', title: 'Re:Veil Device Integrity', iconType: 'shield', status: 'Active', desc: '全エンドポイントにて最新のシグネチャ適用を確認。未検知の脅威なし。', date: '2025/06/01' },
-      { id: 'ev3', title: 'Quarterly Restore Test', iconType: 'activity', status: 'Verified', desc: '四半期復元テストを実施。Re:NAS上のランダムな10ファイルをリストアし、ハッシュ値の一致を確認。', date: '2025/05/28' },
+      { id: 'ev1', title: 'Backup', iconType: 'db', status: 'Success', desc: '（バックアップ完了の確認内容を記入）', date: '' },
+      { id: 'ev2', title: 'Re:Veil Device Integrity', iconType: 'shield', status: 'Verified', desc: '（Auditorによる端末検証結果を記入）', date: '' },
+      { id: 'ev3', title: 'RAID / Disk Health Check', iconType: 'activity', status: 'Verified', desc: '（RAID状態・SMART検査の結果を記入）', date: '' },
     ],
     evidenceImages: [],
     news: [
-      { id: 'n1', title: 'スマートフォンの位置情報を悪用した標的型攻撃', date: '2025/12/20', source: 'Global Cyber Security Watch', content: '一般的な商用OSの脆弱性を突き、位置情報やマイク音声を盗聴するスパイウェアが確認されています。特定の企業幹部を狙うケースが増加傾向にあります。', impact: '【貴社への影響】貴社採用の「Re:Veil (GrapheneOS)」は、OSレベルでトラッキング防止機能が強化されており、当該スパイウェアの影響を受けません。' },
-      { id: 'n2', title: 'ランサムウェアによるNAS機器への攻撃激化', date: '2025/12/15', source: 'TechDefense Report', content: '未修正の脆弱性を放置したNAS機器がランサムウェアに感染し、バックアップデータごと暗号化される被害が多発しています。', impact: '【貴社への影響】「Re:NAS」はDebianベースの堅牢化設定に加え、定期的な自動アップデートが適用されており、脆弱性は解消済みです。' },
+      { id: 'n1', title: '（ニュース見出し）', date: '', source: '', content: '（概要）', impact: '（貴社への影響と対策）' },
     ],
     changes: [
-      { id: '1', date: '05/10', type: '定期メンテ', content: 'Re:NAS セキュリティパッチ適用 (Debian Security Update)', result: '完了', owner: '山田' },
-      { id: '2', date: '05/15', type: '設定変更', content: 'Re:Veil 新規セットアップ (1台) - キッティング実施', result: '完了', owner: '鈴木' },
-      { id: '3', date: '05/20', type: '予防保守', content: 'Re:NAS ZFS Scrub実行および整合性チェック', result: '正常', owner: 'System' },
-      { id: '4', date: '05/25', type: 'Web更新', content: 'HP お知らせ情報の更新作業 (Git Deploy)', result: '完了', owner: '佐藤' },
-      { id: '5', date: '05/28', type: '監査', content: '月次ログ監査およびレポート作成', result: '完了', owner: '山田' },
+      { id: '1', date: '', type: '定期メンテ', content: '（作業内容）', result: '完了', owner: '' },
     ],
     roadmap: {
-      nextMonth: '・Re:Veil OSアップデート: 来月リリース予定のGrapheneOS大型アップデートに向けた検証を実施します。\n・Re:NAS 容量監査: 不要な一時ファイル(スナップショットの古い世代)のクリーンアップを実施予定です。',
-      strategicAdvice: '■ スマートフォン (Re:Veil) の追加導入について\n現在試験導入中の2台に加え、営業部門への展開をご検討中とのことですが、現在の管理サーバー構成で最大50台まで収容可能です。\n\n■ ゼロトラスト環境へのステップアップ\nRe:VeilとRe:NASの連携において、デバイス証明書を用いたより強固な認証方式（mTLS）の導入準備が整いつつあります。来期予算での実装をご提案します。\n\n推奨アクション:\n・次月定例会にて、追加キッティングのスケジュール案を提示いたします。\n・mTLS導入によるセキュリティ向上効果の試算表を作成します。',
+      nextMonth: '（来月の予定作業）',
+      strategicAdvice: '（中長期の提言）',
     },
     invoice: {
-      invNo: 'INV-2025-0501', invDate: '2025-06-01', dueDate: '2025-06-30',
-      currency: 'USD', taxRate: 0, logoSrc: null,
+      invNo: `INV-${meta.year}${meta.month}`, invDate: '', dueDate: '',
+      currency: 'PHP', taxRate: 0, logoSrc: null,
       senderName: 'KAKEHASHI ASIA INC.',
-      senderDetails: '7/F Finman Bldg.,131 Tordesillas St., Bel Air, Makati,1200 METRO MANILA,PHILIPPINES\nTax ID: 010-908-840-00000\nPhone: +63 09178171702',
-      clientName: 'Client Corp (Global)', clientDetails: 'Manila, Philippines\nAttn: Finance Dept',
-      bankName: 'East West Banking Corp.', bankBranch: 'Benavidez Branch',
-      bankSwift: 'EWBCPHIMMXXX', bankType: 'Ordinary',
-      bankNo: '200056876412', bankHolder: 'KAKEHASHI ASIA INC.',
+      senderDetails: '（住所）\nTax ID: （JSON側で入力）',
+      clientName: '（請求先）', clientDetails: '',
+      bankName: '', bankBranch: '', bankSwift: '', bankType: '', bankNo: '', bankHolder: '',
       notes: 'Please remit the payment by the due date.\nBank fees, if any, are to be borne by the payer.',
       items: [
-        { id: '1', desc: 'Monthly Security Consulting Fee (Basic Plan)', qty: 1, unit: 4500 },
-        { id: '2', desc: 'Re:Veil Management License (May Usage)', qty: 2, unit: 45 },
-        { id: '3', desc: 'Re:NAS Maintenance Support', qty: 1, unit: 250 },
+        { id: '1', desc: 'Maintenance Plan -Executive-', qty: 1, unit: 0 },
       ],
     },
   };
 };
+
+// 読み込んだJSONの欠けている項目を初期値で補い、型の違う値を直す（画面が真っ白になるのを防ぐ）
+const mergeDefaults = (def: unknown, raw: unknown): unknown => {
+  if (def === null) return raw ?? null;
+  if (Array.isArray(def)) {
+    if (!Array.isArray(raw)) return def;
+    const tmpl = def[0];
+    return tmpl !== undefined && typeof tmpl === 'object' ? raw.map(r => mergeDefaults(tmpl, r)) : raw;
+  }
+  if (typeof def === 'object') {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return def;
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(def as object)) {
+      out[k] = mergeDefaults((def as Record<string, unknown>)[k], (raw as Record<string, unknown>)[k]);
+    }
+    return out;
+  }
+  if (raw === undefined || raw === null) return def;
+  if (typeof def === 'number') {
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    return Number.isFinite(n) ? n : def;
+  }
+  if (typeof def === 'string') return typeof raw === 'string' ? raw : String(raw);
+  return typeof raw === typeof def ? raw : def;
+};
+
+const normalizeData = (raw: unknown): ReportData => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('invalid');
+  return mergeDefaults(buildInitialData(), raw) as ReportData;
+};
+
+const docRef = (meta: ReportData['meta']) => `SAR-${meta.year}-${String(meta.month).padStart(2, '0')}`;
 
 // ============================================================
 // DRAG & DROP HOOK
@@ -208,139 +232,148 @@ const useDragSort = <T extends { id: string }>(
 };
 
 // ============================================================
-// CHART COMPONENTS
+// EXECUTIVE DESIGN COMPONENTS（印刷される報告書の部品）
 // ============================================================
-const SimplePieChart = ({ data }: { data: ThreatStat[] }) => {
-  const total = data.reduce((acc, cur) => acc + cur.count, 0);
-  if (total === 0) return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">データなし</div>;
-  let currentAngle = 0;
+const EX_PALETTE = ['#13294B', '#A8874F', '#5B7083', '#C9BFA8', '#2E4A6B', '#7A6A4F'];
+
+const DonutChart = ({ data }: { data: ThreatStat[] }) => {
+  const total = data.reduce((acc, cur) => acc + (cur.count || 0), 0);
+  if (total === 0) return <div className="ex-empty">当月の検知データなし</div>;
+  const R = 40;
+  const C = 2 * Math.PI * R;
+  const segs = data.reduce<{ name: string; count: number; start: number; frac: number; color: string }[]>((acc, item, i) => {
+    const prev = acc[acc.length - 1];
+    const start = prev ? prev.start + prev.frac : 0;
+    acc.push({ name: item.name, count: item.count, start, frac: (item.count || 0) / total, color: EX_PALETTE[i % EX_PALETTE.length] });
+    return acc;
+  }, []);
   return (
-    <div className="flex items-center gap-8 justify-center h-64">
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full drop-shadow-md">
-          {data.map((item, i) => {
-            const percentage = item.count / total;
-            const angle = percentage * 360;
-            const x1 = 50 + 50 * Math.cos((Math.PI * currentAngle) / 180);
-            const y1 = 50 + 50 * Math.sin((Math.PI * currentAngle) / 180);
-            const x2 = 50 + 50 * Math.cos((Math.PI * (currentAngle + angle)) / 180);
-            const y2 = 50 + 50 * Math.sin((Math.PI * (currentAngle + angle)) / 180);
-            const pathData = percentage >= 1
-              ? 'M 50 50 m -50,0 a 50,50 0 1,0 100,0 a 50,50 0 1,0 -100,0'
-              : `M 50 50 L ${x1} ${y1} A 50 50 0 ${angle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`;
-            const el = <path key={i} d={pathData} fill={item.color} stroke="white" strokeWidth="1" />;
-            currentAngle += angle;
-            return el;
-          })}
-        </svg>
-      </div>
-      <div className="space-y-2">
-        {data.map((item, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-            <span className="font-bold text-slate-700 w-24">{item.name}</span>
-            <span className="font-mono text-slate-500">{item.count.toLocaleString()}</span>
-            <span className="text-slate-400 text-[10px]">({Math.round((item.count / total) * 100)}%)</span>
-          </div>
+    <div className="ex-donut">
+      <svg viewBox="0 0 100 100" className="ex-donut-svg">
+        <circle cx="50" cy="50" r={R} fill="none" stroke="#ECE7DC" strokeWidth="11" />
+        {segs.map((s, i) => (
+          <circle key={i} cx="50" cy="50" r={R} fill="none" stroke={s.color} strokeWidth="11"
+            strokeDasharray={`${s.frac * C} ${C}`} strokeDashoffset={-s.start * C}
+            transform="rotate(-90 50 50)" />
         ))}
-      </div>
+        <text x="50" y="49" textAnchor="middle" className="ex-donut-num">{total.toLocaleString()}</text>
+        <text x="50" y="59" textAnchor="middle" className="ex-donut-cap">TOTAL BLOCKED</text>
+      </svg>
+      <table className="ex-legend">
+        <tbody>
+          {segs.map((s, i) => (
+            <tr key={i}>
+              <td><span className="ex-swatch" style={{ backgroundColor: s.color }} /></td>
+              <td className="ex-legend-name">{s.name}</td>
+              <td className="ex-num">{s.count.toLocaleString()}</td>
+              <td className="ex-legend-pct">{(s.frac * 100).toFixed(1)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
 
-const SimpleBarChart = ({ data, color = '#3b82f6', unit = '%' }: { data: ResourceStat[]; color?: string; unit?: string }) => {
+const BarChart = ({ data, unit = '%' }: { data: ResourceStat[]; unit?: string }) => {
   const maxValue = Math.max(...data.map(d => d.value), 100);
   return (
-    <div className="w-full px-4 pt-4 pb-2">
-      <div className="flex items-end justify-between gap-2 h-32 border-b border-slate-200">
+    <div className="ex-bars">
+      <div className="ex-bars-plot">
+        {[25, 50, 75].map(g => <div key={g} className="ex-grid" style={{ bottom: `${(g / maxValue) * 100}%` }}><span>{g}{unit}</span></div>)}
         {data.map((item, i) => (
-          <div key={i} className="flex flex-col items-center justify-end flex-1 h-full group relative">
-            <div className="absolute -top-6 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              {item.value}{unit}
-            </div>
-            <div
-              className="w-full rounded-t transition-all duration-500"
-              style={{
-                height: `${Math.max((item.value / maxValue) * 100, 2)}%`,
-                backgroundColor: color,
-                printColorAdjust: 'exact',
-                WebkitPrintColorAdjust: 'exact',
-              }}
-            />
+          <div key={i} className="ex-bar-col">
+            <div className="ex-bar-val">{item.value}{unit}</div>
+            <div className={`ex-bar ${i === data.length - 1 ? 'is-current' : ''}`} style={{ height: `${Math.max((item.value / maxValue) * 100, 1.5)}%` }} />
           </div>
         ))}
       </div>
-      <div className="flex justify-between gap-2 mt-2">
-        {data.map((item, i) => (
-          <div key={i} className="flex-1 text-center text-xs text-slate-500 font-medium">{item.month}</div>
-        ))}
+      <div className="ex-bars-labels">
+        {data.map((item, i) => <div key={i} className={i === data.length - 1 ? 'is-current' : ''}>{item.month}</div>)}
       </div>
     </div>
   );
 };
 
-// ============================================================
-// UI HELPERS
-// ============================================================
-const StatusBadge = ({ status }: { status: string }) => {
-  const styles: Record<string, string> = {
-    Healthy: 'bg-green-100 text-green-800 border-green-200',
-    Warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    Critical: 'bg-red-100 text-red-800 border-red-200',
+const StatusMark = ({ status }: { status: string }) => {
+  const map: Record<string, { jp: string; en: string; cls: string }> = {
+    Healthy: { jp: '正常', en: 'NOMINAL', cls: 'ok' },
+    Warning: { jp: '注意', en: 'ADVISORY', cls: 'warn' },
+    Critical: { jp: '警戒', en: 'CRITICAL', cls: 'crit' },
   };
-  const labels: Record<string, string> = {
-    Healthy: '🟢 正常', Warning: '🟡 注意', Critical: '🔴 危険',
-  };
+  const s = map[status] ?? { jp: status, en: '', cls: 'warn' };
+  return <span className={`ex-status ${s.cls}`}><i />{s.jp}<small>{s.en}</small></span>;
+};
+
+const Monogram = ({ name, size = 28, light = false }: { name: string; size?: number; light?: boolean }) => {
+  const letter = (name.trim()[0] ?? 'K').toUpperCase();
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${styles[status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-      {labels[status] ?? status}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 40 40" className="ex-mono">
+      <circle cx="20" cy="20" r="19" fill="none" stroke="#A8874F" strokeWidth="1" />
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#A8874F" strokeWidth="0.5" />
+      <text x="20" y="26.5" textAnchor="middle" fill={light ? '#E9DFC8' : '#13294B'} className="ex-mono-letter">{letter}</text>
+    </svg>
   );
 };
 
 const SectionHeader = ({ number, title, subTitle }: { number: string; title: string; subTitle: string }) => (
-  <div className="mb-6 border-b-2 border-slate-800 pb-2 mt-4 break-inside-avoid">
-    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-      <span className="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded text-lg font-serif">{number}</span>
-      {title}
-    </h2>
-    <p className="text-slate-500 text-xs font-bold mt-1 ml-11 uppercase tracking-[0.2em]">{subTitle}</p>
-  </div>
-);
-
-const PageHeader = ({ meta, pageNum, totalPages, title }: { meta: ReportData['meta']; pageNum: number; totalPages: number; title?: string }) => (
-  <div className="flex justify-between items-end border-b border-slate-300 pb-2 mb-8 print:mb-6 text-xs text-slate-500">
+  <div className="ex-section">
+    <div className="ex-section-no">{number}</div>
     <div>
-      <h1 className="font-bold text-slate-700 text-sm">月次システム監査レポート - {meta.month}月度</h1>
-      <span>{meta.clientName} 御中</span>
-    </div>
-    <div className="text-right">
-      <div className="font-bold text-slate-400">{title ?? 'Confidential'}</div>
-      <div>{meta.companyName} | Page {pageNum} / {totalPages}</div>
+      <div className="ex-section-en">{subTitle}</div>
+      <h2 className="ex-section-title">{title}</h2>
     </div>
   </div>
 );
 
-const ScoreCard = ({ score }: { score: string }) => {
-  const colors: Record<string, string> = {
-    S: 'bg-gradient-to-br from-blue-700 to-blue-900',
-    A: 'bg-gradient-to-br from-green-600 to-green-800',
-    B: 'bg-gradient-to-br from-yellow-500 to-yellow-700',
-    C: 'bg-gradient-to-br from-red-600 to-red-800',
-  };
+const SubHeading = ({ children }: { children: React.ReactNode }) => <h3 className="ex-sub">{children}</h3>;
+
+const PageFrame = ({ meta, pageNum, totalPages, section, children }: { meta: ReportData['meta']; pageNum: number; totalPages: number; section: string; children: React.ReactNode }) => (
+  <section className="report-page ex-page">
+    <header className="ex-head">
+      <div className="ex-head-l">
+        <Monogram name={meta.companyName} size={24} />
+        <div>
+          <div className="ex-head-title">月次セキュリティ監査報告書</div>
+          <div className="ex-head-meta">{meta.clientName} 御中 ／ {meta.year}年{Number(meta.month)}月度</div>
+        </div>
+      </div>
+      <div className="ex-head-r">
+        <div className="ex-class">CONFIDENTIAL</div>
+        <div className="ex-head-sec">{section}</div>
+      </div>
+    </header>
+    <div className="ex-body">{children}</div>
+    <footer className="ex-foot">
+      <span>Ref. {docRef(meta)}</span>
+      <span>本書は機密情報を含みます。権限のない複製・転送・開示を禁じます。</span>
+      <span className="ex-pg">{String(pageNum).padStart(2, '0')} <em>/</em> {String(totalPages).padStart(2, '0')}</span>
+    </footer>
+  </section>
+);
+
+const ScoreSeal = ({ score }: { score: string }) => {
   const descs: Record<string, string> = {
-    S: '極めて安定（推奨・模範的状態）',
-    A: '概ね安定・要軽微対応',
-    B: '要注意・改善推奨',
-    C: '危険・即時対応が必要',
+    S: '極めて安定 ― 模範的な運用状態',
+    A: '概ね安定 ― 軽微な対応を推奨',
+    B: '要注意 ― 改善を推奨',
+    C: '危険 ― 即時対応が必要',
   };
   return (
-    <div className="flex items-center gap-6 bg-slate-50 p-6 rounded-lg border border-slate-200 shadow-sm mb-6">
-      <div className={`${colors[score] ?? colors.C} text-white w-24 h-24 flex items-center justify-center text-6xl font-bold rounded-lg shadow-md font-serif border-4 border-white`}>{score}</div>
+    <div className="ex-score">
+      <div className="ex-seal">
+        <svg viewBox="0 0 120 120" width="132" height="132">
+          <circle cx="60" cy="60" r="57" fill="none" stroke="#A8874F" strokeWidth="1.2" />
+          <circle cx="60" cy="60" r="51" fill="#13294B" />
+          <circle cx="60" cy="60" r="47" fill="none" stroke="#A8874F" strokeWidth="0.6" />
+          <text x="60" y="78" textAnchor="middle" className="ex-seal-letter">{score}</text>
+        </svg>
+      </div>
       <div>
-        <h3 className="font-bold text-lg text-slate-800 mb-1">総合健全性スコア (Health Score)</h3>
-        <p className="text-sm font-medium text-slate-600 mb-2">{descs[score] ?? ''}</p>
-        <div className="text-xs text-slate-400">※ 評価基準: 可用性(40%) + セキュリティ強度(40%) + リソース余裕度(20%)</div>
+        <div className="ex-kicker">Overall Health Rating</div>
+        <div className="ex-score-title">総合健全性評価</div>
+        <div className="ex-score-desc">{descs[score] ?? ''}</div>
+        <div className="ex-note">評価基準：可用性 40％ ＋ セキュリティ強度 40％ ＋ リソース余裕度 20％</div>
       </div>
     </div>
   );
@@ -387,7 +420,7 @@ export default function ReportGenerator() {
   const [data, setData] = useState<ReportData>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved) as ReportData;
+      if (saved) return normalizeData(JSON.parse(saved));
     } catch { /* ignore */ }
     return buildInitialData();
   });
@@ -407,8 +440,14 @@ export default function ReportGenerator() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   // localStorage 自動保存
+  const [saveFailed, setSaveFailed] = useState(false);
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+    // 入力のたびに書き込まないよう、少し待ってから保存する
+    const t = setTimeout(() => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); setSaveFailed(false); }
+      catch { setSaveFailed(true); }
+    }, 400);
+    return () => clearTimeout(t);
   }, [data]);
 
   // JSON エクスポート
@@ -429,10 +468,10 @@ export default function ReportGenerator() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const parsed = JSON.parse(ev.target?.result as string) as ReportData;
+        const parsed = normalizeData(JSON.parse(ev.target?.result as string));
         setData(parsed);
         setShowRestoreBanner(false);
-        alert('データを読み込みました！');
+        alert('データを読み込みました。不足していた項目は初期値で補完しています。');
       } catch {
         alert('JSONファイルの読み込みに失敗しました。');
       }
@@ -568,17 +607,34 @@ export default function ReportGenerator() {
 
   const invoiceCalc = useMemo(() => {
     const subtotal = data.invoice.items.reduce((sum, item) => sum + item.qty * item.unit, 0);
-    const tax = Math.floor(subtotal * (data.invoice.taxRate / 100));
+    const rawTax = subtotal * (data.invoice.taxRate / 100);
+    // 円は1円未満切り捨て、USD/PHPはセント単位で四捨五入
+    const tax = data.invoice.currency === 'JPY' ? Math.floor(rawTax) : Math.round(rawTax * 100) / 100;
     return { subtotal, tax, total: subtotal + tax };
   }, [data.invoice]);
 
   const totalPages = 12;
+  const hasNas = data.assets.some(a => a.id.includes('NAS'));
+  const hasMobile = data.assets.some(a => a.id.includes('MOB'));
+  const hasWeb = data.assets.some(a => a.id.includes('WEB'));
+  const tocItems = [
+    { p: 3, t: 'エグゼクティブ・サマリー', en: 'Executive Summary' },
+    { p: 4, t: 'セキュリティインシデント統計', en: 'Threat Detection & Analysis' },
+    { p: 5, t: '資産稼働状況', en: 'Asset Status' },
+    { p: 6, t: 'リソース＆パフォーマンス分析', en: 'Capacity Planning & Trends' },
+    { p: 7, t: '運用証跡', en: 'Proof of Protection' },
+    { p: 8, t: hasWeb ? 'デバイス＆ネットワーク分析' : 'デバイス分析', en: 'Device Integrity' },
+    { p: 9, t: '変更管理・メンテナンス履歴', en: 'System Change Log' },
+    { p: 10, t: '脅威インテリジェンス', en: 'Global Threat Intelligence' },
+    { p: 11, t: '戦略的ロードマップ＆提言', en: 'Strategy & Recommendations' },
+    { p: 12, t: '請求書', en: 'Invoice' },
+  ];
 
   // ============================================================
   // RENDER
   // ============================================================
   return (
-    <div className="min-h-screen bg-gray-100 font-sans text-slate-800">
+    <div className="min-h-screen bg-gray-100 font-sans text-slate-800 print:bg-white print:min-h-0">
       {showOverflowModal && (
         <OverflowWarningModal
           warnings={overflowWarnings}
@@ -616,6 +672,13 @@ export default function ReportGenerator() {
         </div>
       </nav>
 
+      {/* 自動保存失敗の警告 */}
+      {saveFailed && (
+        <div className="print:hidden bg-red-700 text-white px-6 py-2 flex items-center gap-2 text-sm">
+          <AlertCircle size={14} /> 自動保存できませんでした（画像が大きすぎる可能性があります）。「エクスポート」でJSONを保存してください。
+        </div>
+      )}
+
       {/* 復元バナー */}
       {showRestoreBanner && (
         <div className="print:hidden bg-green-600 text-white px-6 py-2 flex items-center justify-between text-sm">
@@ -627,7 +690,7 @@ export default function ReportGenerator() {
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto p-4 md:p-8 flex gap-8 items-start">
+      <main className="max-w-[1600px] mx-auto p-4 md:p-8 flex gap-8 items-start print:block print:p-0 print:m-0 print:max-w-none">
 
         {/* ===================== EDITOR ===================== */}
         <div className={`w-full md:w-1/3 bg-white rounded-xl shadow-xl overflow-hidden print:hidden flex flex-col h-[calc(100vh-120px)] ${activeTab === 'preview' ? 'hidden lg:flex' : ''}`}>
@@ -996,415 +1059,328 @@ export default function ReportGenerator() {
         </div>
 
         {/* ===================== PREVIEW ===================== */}
-        <div ref={previewRef} className={`w-full bg-slate-200/50 p-8 overflow-y-auto print:p-0 print:bg-white print:w-full print:overflow-visible shadow-inner rounded-xl ${activeTab === 'edit' ? 'hidden md:block' : ''}`}>
+        <div ref={previewRef} className={`ex-root w-full bg-[#D9D4CA] p-8 overflow-y-auto print:p-0 print:bg-white print:w-full print:overflow-visible shadow-inner rounded-xl ${activeTab === 'edit' ? 'hidden md:block' : ''}`}>
 
           {/* P.1 Cover */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none relative flex flex-col justify-between overflow-hidden">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-slate-100 rounded-bl-[100%] -z-0" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-50 rounded-tr-[100%] -z-0" />
-            <div className="p-[20mm] flex-grow flex flex-col justify-center relative z-10">
-              <div className="border-l-8 border-blue-600 pl-8 mb-20">
-                <p className="text-slate-500 tracking-[0.3em] font-bold text-sm uppercase mb-4">Confidential Security Audit</p>
-                <h1 className="text-5xl font-bold text-slate-900 leading-tight mb-6">Monthly System<br /><span className="text-blue-600">Audit & Resilience</span><br />Report</h1>
-                <p className="text-xl text-slate-600 font-serif italic">Comprehensive Asset Protection & Threat Analysis</p>
+          <section className="report-page ex-cover">
+            <div className="ex-cover-frame">
+              <div className="ex-cover-band">{'CONFIDENTIAL \u3000・\u3000 取扱注意 \u3000・\u3000 RESTRICTED DISTRIBUTION'}</div>
+              <div className="ex-cover-main">
+                <Monogram name={data.meta.companyName} size={64} light />
+                <div className="ex-cover-kicker">Monthly Security Audit &amp; Resilience Report</div>
+                <h1 className="ex-cover-title">月次セキュリティ<br />監査報告書</h1>
+                <div className="ex-cover-rule"><span /></div>
+                <div className="ex-cover-period">{data.meta.year}年 {Number(data.meta.month)}月度</div>
+                <table className="ex-cover-table">
+                  <tbody>
+                    {[
+                      { l: 'Prepared For', v: `${data.meta.clientName} 御中` },
+                      { l: 'Issue Date', v: data.meta.createDate },
+                      { l: 'Prepared By', v: data.meta.author },
+                      { l: 'Document Ref.', v: docRef(data.meta) },
+                    ].map((r, i) => (
+                      <tr key={i}><th>{r.l}</th><td>{r.v}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="max-w-lg">
-                {[{ label: 'Client', value: `${data.meta.clientName} 御中` }, { label: 'Reporting Period', value: `${data.meta.year} / ${data.meta.month}` }, { label: 'Issue Date', value: data.meta.createDate }, { label: 'Prepared By', value: data.meta.author }].map((row, i) => (
-                  <div key={i} className="flex border-b border-slate-200 py-4">
-                    <span className="w-40 text-slate-400 font-bold text-xs uppercase tracking-wider pt-1">{row.label}</span>
-                    <span className="text-slate-800 font-bold text-lg">{row.value}</span>
-                  </div>
-                ))}
+              <div className="ex-cover-foot">
+                <div className="ex-cover-company">{data.meta.companyName}</div>
+                <div className="ex-cover-tag">Advanced Cyber Security Solutions</div>
+                <p className="ex-cover-notice">本書は受領者のみを対象とした機密文書です。記載内容の全部または一部を、発行者の書面による許可なく複製・転送・開示することを禁じます。</p>
               </div>
             </div>
-            <div className="bg-slate-900 text-white p-8 text-center relative z-10">
-              <div className="text-sm font-bold tracking-widest uppercase mb-1">{data.meta.companyName}</div>
-              <div className="text-[10px] text-slate-400">Advanced Cyber Security Solutions</div>
-            </div>
-          </div>
+          </section>
           <div className="page-break" />
 
           {/* P.2 TOC */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={2} totalPages={totalPages} title="Table of Contents" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-12 mt-8">目次</h2>
-            <div className="space-y-6 max-w-2xl mx-auto">
-              {[
-                { p: 3, t: 'エグゼクティブ・サマリー' }, { p: 4, t: 'セキュリティインシデント統計' },
-                { p: 5, t: '資産稼働状況詳細' }, { p: 6, t: 'リソース＆パフォーマンス分析' },
-                { p: 7, t: '運用証跡・エビデンス' }, { p: 8, t: 'デバイス＆ネットワーク分析' },
-                { p: 9, t: '変更管理・メンテナンス履歴' }, { p: 10, t: 'Global Threat Intelligence' },
-                { p: 11, t: '戦略的ロードマップ＆提言' }, { p: 12, t: '請求書 (Invoice)' },
-              ].map(item => (
-                <div key={item.p} className="flex items-baseline border-b border-dashed border-slate-300 pb-2">
-                  <span className="text-lg font-bold text-slate-700">{item.t}</span>
-                  <span className="flex-grow" />
-                  <span className="text-slate-500 font-mono">P.{item.p}</span>
-                </div>
+          <PageFrame meta={data.meta} pageNum={2} totalPages={totalPages} section="Contents">
+            <div className="ex-kicker mt-6">Table of Contents</div>
+            <h2 className="ex-toc-title">目次</h2>
+            <ol className="ex-toc">
+              {tocItems.map((item, i) => (
+                <li key={item.p}>
+                  <span className="ex-toc-no">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="ex-toc-t">{item.t}<small>{item.en}</small></span>
+                  <span className="ex-toc-dots" />
+                  <span className="ex-toc-p">{item.p}</span>
+                </li>
               ))}
+            </ol>
+            <div className="ex-scope">
+              <div className="ex-kicker">Scope of Engagement</div>
+              <div className="ex-scope-title">監査対象範囲</div>
+              <p>本報告書は、貴社より委託を受けた以下の領域を対象とします。</p>
+              <ol>
+                {hasNas && <li><strong>Re:NAS</strong>{'\u3000'}可用性およびデータ保全性</li>}
+                {hasMobile && <li><strong>Re:Veil</strong>{'\u3000'}OS整合性および端末管理状況</li>}
+                {hasWeb && <li><strong>Web Server</strong>{'\u3000'}外部公開サービスの脆弱性および攻撃検知状況</li>}
+              </ol>
             </div>
-            <div className="mt-24 p-6 bg-slate-50 rounded border border-slate-200">
-              <h3 className="font-bold text-slate-700 mb-2 text-sm uppercase">監査対象スコープ</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                本レポートは、貴社より委託を受けた以下の領域を対象としています。<br />
-                1. <strong>Re:NAS</strong> の可用性およびデータ保全性<br />
-                2. <strong>Re:Veil</strong> のOS整合性およびフリート管理状況<br />
-                3. <strong>Web Server</strong> の外部公開サービスにおける脆弱性および攻撃検知状況
-              </p>
-            </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.3 Summary */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={3} totalPages={totalPages} title="Executive Summary" />
-            <SectionHeader number="1" title="エグゼクティブ・サマリー" subTitle="Overall Health & Key Highlights" />
-            <div className="mb-8">
-              <h3 className="text-sm font-bold text-slate-500 mb-4 uppercase">1.1 総合健全性スコア判定</h3>
-              <ScoreCard score={data.summary.score} />
+          <PageFrame meta={data.meta} pageNum={3} totalPages={totalPages} section="Executive Summary">
+            <SectionHeader number="01" title="エグゼクティブ・サマリー" subTitle="Executive Summary" />
+            <ScoreSeal score={data.summary.score} />
+            <div className="ex-kpis">
+              <div><div className="ex-kicker">System Uptime</div><div className="ex-kpi-v">{data.summary.uptime}</div><div className="ex-note">計画停止を除く実稼働率</div></div>
+              <div><div className="ex-kicker">Threats Blocked</div><div className="ex-kpi-v">{data.summary.threatsBlocked}</div><div className="ex-note">境界防御による自動遮断件数</div></div>
+              <div><div className="ex-kicker">Backup Status</div><div className="ex-kpi-v ex-kpi-sm">{data.summary.backupStatus}</div><div className="ex-note">当月のバックアップ実行結果</div></div>
             </div>
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              <div className="bg-blue-50 p-5 rounded border-l-4 border-blue-600">
-                <div className="text-xs font-bold text-blue-800 uppercase mb-2">System Uptime</div>
-                <div className="text-3xl font-bold text-slate-800">{data.summary.uptime}</div>
-                <div className="text-xs text-slate-500 mt-1">計画停止を除く実稼働率</div>
-              </div>
-              <div className="bg-indigo-50 p-5 rounded border-l-4 border-indigo-600">
-                <div className="text-xs font-bold text-indigo-800 uppercase mb-2">Threats Blocked</div>
-                <div className="text-3xl font-bold text-slate-800">{data.summary.threatsBlocked}</div>
-                <div className="text-xs text-slate-500 mt-1">IPS/WAFによる自動防御件数</div>
-              </div>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-500 mb-4 uppercase">1.2 コンサルタント総評</h3>
-              <div className="text-sm leading-7 whitespace-pre-wrap text-justify">{data.summary.comment}</div>
-            </div>
-          </div>
+            <SubHeading>コンサルタント総評</SubHeading>
+            <div className="ex-prose ex-lead">{data.summary.comment}</div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.4 Threat Stats */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={4} totalPages={totalPages} title="Security Statistics" />
-            <SectionHeader number="2" title="セキュリティインシデント統計" subTitle="Threat Detection & Analysis" />
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4"><ShieldCheck className="w-5 h-5 text-blue-600" /><h3 className="font-bold text-slate-700">検知された攻撃の内訳</h3></div>
-              <div className="p-6 bg-slate-50 rounded-xl border border-slate-200"><SimplePieChart data={data.threatStats} /></div>
-              <div className="mt-4 text-xs text-slate-500 text-center">※ FW/WAFにて遮断された攻撃の種別内訳（実被害なし）</div>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 border border-slate-200 rounded">
-                <h4 className="font-bold text-sm text-slate-700 mb-2">{data.securityAnalysis.globalIpTitle}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{data.securityAnalysis.globalIpComment}</p>
+          <PageFrame meta={data.meta} pageNum={4} totalPages={totalPages} section="Security Statistics">
+            <SectionHeader number="02" title="セキュリティインシデント統計" subTitle="Threat Detection & Analysis" />
+            <SubHeading>検知・遮断された攻撃の内訳</SubHeading>
+            <div className="ex-panel"><DonutChart data={data.threatStats} /></div>
+            <div className="ex-note text-center mt-2">※ 境界防御にて遮断された攻撃の種別内訳（実被害なし）</div>
+            <div className="ex-two mt-8">
+              <div className="ex-card">
+                <h4>{data.securityAnalysis.globalIpTitle}</h4>
+                <p>{data.securityAnalysis.globalIpComment}</p>
               </div>
-              <div className="p-4 border border-slate-200 rounded">
-                <h4 className="font-bold text-sm text-slate-700 mb-2">{data.securityAnalysis.botDefenseTitle}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{data.securityAnalysis.botDefenseComment}</p>
+              <div className="ex-card">
+                <h4>{data.securityAnalysis.botDefenseTitle}</h4>
+                <p>{data.securityAnalysis.botDefenseComment}</p>
               </div>
             </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.5 Assets */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={5} totalPages={totalPages} title="Asset Details" />
-            <SectionHeader number="3" title="資産稼働状況詳細" subTitle="Detailed Status per Asset" />
-            <div className="space-y-6">
-              {data.assets.map((asset, i) => (
-                <div key={i} className="break-inside-avoid border border-slate-200 rounded-lg p-5 shadow-sm">
-                  <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${asset.id.includes('NAS') ? 'bg-indigo-100 text-indigo-600' : asset.id.includes('MOB') ? 'bg-teal-100 text-teal-600' : 'bg-blue-100 text-blue-600'}`}>
-                        {asset.id.includes('NAS') ? <HardDrive size={20} /> : asset.id.includes('MOB') ? <Smartphone size={20} /> : <Globe size={20} />}
-                      </div>
-                      <div>
-                        <div className="font-bold text-lg text-slate-800">{asset.hostName}</div>
-                        <div className="text-xs text-slate-500 font-mono">{asset.id} | {asset.os}</div>
-                      </div>
-                    </div>
-                    <StatusBadge status={asset.status} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div><div className="text-xs font-bold text-slate-400 uppercase mb-1">Role</div><div className="font-medium text-slate-700">{asset.role}</div></div>
-                    <div className="col-span-2"><div className="text-xs font-bold text-slate-400 uppercase mb-1">Technical Status</div><div className="font-mono text-xs bg-slate-50 p-2 rounded border border-slate-200 text-slate-600">{asset.detail}</div></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PageFrame meta={data.meta} pageNum={5} totalPages={totalPages} section="Asset Status">
+            <SectionHeader number="03" title="資産稼働状況" subTitle="Detailed Status per Asset" />
+            <table className="ex-ledger">
+              <thead>
+                <tr><th style={{ width: '17%' }}>Asset ID</th><th style={{ width: '27%' }}>Host / Role</th><th style={{ width: '20%' }}>Platform</th><th style={{ width: '14%' }}>Status</th><th>Technical Status</th></tr>
+              </thead>
+              <tbody>
+                {data.assets.map((asset, i) => (
+                  <tr key={i}>
+                    <td className="ex-mono-cell">{asset.id}</td>
+                    <td><div className="ex-strong">{asset.hostName}</div><div className="ex-note">{asset.role}</div></td>
+                    <td>{asset.os}</td>
+                    <td><StatusMark status={asset.status} /></td>
+                    <td className="ex-mono-cell ex-small">{asset.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="ex-note mt-4">ステータス定義 ― 正常：対応不要 ／ 注意：経過観察または軽微な対応 ／ 警戒：即時対応が必要</div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.6 Performance */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={6} totalPages={totalPages} title="Performance Analysis" />
-            <SectionHeader number="4" title="リソース＆パフォーマンス分析" subTitle="Capacity Planning & Trends" />
-            <div className="mb-10 break-inside-avoid">
-              <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><HardDrive className="w-5 h-5 text-indigo-500" />Re:NAS Storage Growth (直近{GRAPH_MONTHS}ヶ月)</h3>
-              <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-4"><SimpleBarChart data={data.resourceStats.nasStorage} color="#6366f1" /></div>
-              <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 text-sm text-slate-700 leading-relaxed rounded-r"><strong>【専門家による分析】</strong><br />{data.performance.nasAnalysis}</div>
+          <PageFrame meta={data.meta} pageNum={6} totalPages={totalPages} section="Performance Analysis">
+            <SectionHeader number="04" title="リソース＆パフォーマンス分析" subTitle="Capacity Planning & Trends" />
+            <SubHeading>Re:NAS ストレージ使用率（直近{GRAPH_MONTHS}ヶ月）</SubHeading>
+            <div className="ex-chart-row">
+              <div className="ex-panel"><BarChart data={data.resourceStats.nasStorage} /></div>
+              <div className="ex-analysis"><div className="ex-kicker">Analyst Note</div><p>{data.performance.nasAnalysis}</p></div>
             </div>
-            <div className="mb-8 break-inside-avoid">
-              <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><Cpu className="w-5 h-5 text-blue-500" />System Load Average / CPU (直近{GRAPH_MONTHS}ヶ月)</h3>
-              <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 mb-4"><SimpleBarChart data={data.resourceStats.cpuUsage} color="#3b82f6" /></div>
-              <div className="p-4 text-sm text-slate-600 leading-relaxed border border-slate-200 rounded"><strong>【トレンド分析】</strong><br />{data.performance.cpuAnalysis}</div>
+            <SubHeading>CPU 使用率（直近{GRAPH_MONTHS}ヶ月）</SubHeading>
+            <div className="ex-chart-row">
+              <div className="ex-panel"><BarChart data={data.resourceStats.cpuUsage} /></div>
+              <div className="ex-analysis"><div className="ex-kicker">Trend Analysis</div><p>{data.performance.cpuAnalysis}</p></div>
             </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.7 Evidence */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={7} totalPages={totalPages} title="Operational Evidence" />
-            <SectionHeader number="5" title="運用証跡 (Evidence)" subTitle="Proof of Protection" />
-            <div className="grid grid-cols-1 gap-6">
+          <PageFrame meta={data.meta} pageNum={7} totalPages={totalPages} section="Operational Evidence">
+            <SectionHeader number="05" title="運用証跡" subTitle="Proof of Protection" />
+            <div className="ex-evidence">
               {data.evidenceList.map((ev, i) => (
-                <div key={i} className="flex gap-4 p-4 border border-slate-200 rounded-lg shadow-sm break-inside-avoid">
-                  <div className="bg-slate-100 p-4 rounded flex items-center justify-center text-slate-500 w-16 h-16 shrink-0">
-                    {ev.iconType === 'db' ? <Database /> : ev.iconType === 'shield' ? <ShieldCheck /> : <Activity />}
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex justify-between mb-1">
-                      <h4 className="font-bold text-slate-800">{ev.title}</h4>
-                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">{ev.status}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mb-2 font-mono">Verified At: {ev.date}</p>
-                    <p className="text-sm text-slate-600">{ev.desc}</p>
+                <div key={i} className="ex-ev">
+                  <div className="ex-ev-icon">{ev.iconType === 'db' ? <Database size={20} strokeWidth={1.3} /> : ev.iconType === 'shield' ? <ShieldCheck size={20} strokeWidth={1.3} /> : <Activity size={20} strokeWidth={1.3} />}</div>
+                  <div className="ex-ev-body">
+                    <div className="ex-ev-top"><h4>{ev.title}</h4><span className="ex-chip">{ev.status}</span></div>
+                    <p>{ev.desc}</p>
+                    {ev.date && <div className="ex-note">確認日：{ev.date}</div>}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.8 Device & Network Analysis + Evidence Images */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={8} totalPages={totalPages} title="Device & Network Analysis" />
-            <SectionHeader number="5-2" title="デバイス＆ネットワーク分析" subTitle="Device Integrity & Network Status" />
-            <div className="space-y-4 mb-8">
-              <div className="flex gap-4 p-4 border border-slate-200 rounded-lg shadow-sm break-inside-avoid">
-                <div className="bg-teal-100 p-4 rounded flex items-center justify-center text-teal-600 w-16 h-16 shrink-0"><Smartphone size={24} /></div>
-                <div className="flex-grow">
-                  <h4 className="font-bold text-slate-800 mb-1">Re:Veil (Mobile) Analysis</h4>
-                  <p className="text-sm text-slate-600 leading-relaxed">{data.performance.veilAnalysis}</p>
-                </div>
-              </div>
-              <div className="flex gap-4 p-4 border border-slate-200 rounded-lg shadow-sm break-inside-avoid">
-                <div className="bg-blue-100 p-4 rounded flex items-center justify-center text-blue-600 w-16 h-16 shrink-0"><Globe size={24} /></div>
-                <div className="flex-grow">
-                  <h4 className="font-bold text-slate-800 mb-1">Web / Network Analysis</h4>
-                  <p className="text-sm text-slate-600 leading-relaxed">{data.performance.webAnalysis}</p>
-                </div>
-              </div>
+          <PageFrame meta={data.meta} pageNum={8} totalPages={totalPages} section="Device Analysis">
+            <SectionHeader number="06" title={hasWeb ? 'デバイス＆ネットワーク分析' : 'デバイス分析'} subTitle={hasWeb ? 'Device Integrity & Network Status' : 'Device Integrity'} />
+            <div className="ex-card ex-card-wide">
+              <h4><Smartphone size={15} strokeWidth={1.5} /> Re:Veil（モバイル端末）</h4>
+              <p>{data.performance.veilAnalysis}</p>
             </div>
-            {/* Evidence Images */}
-            <div className="p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
-              {data.evidenceImages.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
+            {hasWeb && (
+              <div className="ex-card ex-card-wide">
+                <h4><Globe size={15} strokeWidth={1.5} /> Web / Network</h4>
+                <p>{data.performance.webAnalysis}</p>
+              </div>
+            )}
+            {data.evidenceImages.length > 0 && (
+              <>
+                <SubHeading>添付エビデンス</SubHeading>
+                <div className="ex-figs">
                   {data.evidenceImages.map((img, idx) => (
-                    <div key={idx} className="bg-white p-2 shadow-sm rounded border border-slate-200">
-                      <img src={img} className="w-full h-auto rounded" alt={`Evidence ${idx + 1}`} />
-                    </div>
+                    <figure key={idx}>
+                      <img src={img} alt={`Exhibit ${idx + 1}`} />
+                      <figcaption>Exhibit {String(idx + 1).padStart(2, '0')}</figcaption>
+                    </figure>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center text-slate-400 py-8">
-                  <ImageIcon className="mx-auto h-12 w-12 text-slate-300 mb-2" />
-                  <span className="text-sm font-bold block">Additional Evidence Screenshots</span>
-                  <span className="text-xs">(No images attached)</span>
-                </div>
-              )}
-            </div>
-          </div>
+              </>
+            )}
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.9 Changes */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={9} totalPages={totalPages} title="Change Management" />
-            <SectionHeader number="6" title="変更管理・メンテナンス履歴" subTitle="System Audit Log" />
-            <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-100 text-slate-700">
-                  <tr>
-                    <th className="px-4 py-3 border-b font-bold w-20">Date</th>
-                    <th className="px-4 py-3 border-b font-bold w-24">Type</th>
-                    <th className="px-4 py-3 border-b font-bold">Content</th>
-                    <th className="px-4 py-3 border-b font-bold w-20 text-center">Result</th>
-                    <th className="px-4 py-3 border-b font-bold w-20">Owner</th>
+          <PageFrame meta={data.meta} pageNum={9} totalPages={totalPages} section="Change Management">
+            <SectionHeader number="07" title="変更管理・メンテナンス履歴" subTitle="System Change Log" />
+            <table className="ex-ledger">
+              <thead>
+                <tr><th style={{ width: '11%' }}>Date</th><th style={{ width: '15%' }}>Type</th><th>Description</th><th style={{ width: '11%' }}>Result</th><th style={{ width: '13%' }}>Owner</th></tr>
+              </thead>
+              <tbody>
+                {data.changes.map(log => (
+                  <tr key={log.id}>
+                    <td className="ex-mono-cell">{log.date}</td>
+                    <td><span className={`ex-tag ${log.type === '障害対応' ? 'is-alert' : ''}`}>{log.type}</span></td>
+                    <td>{log.content}</td>
+                    <td className="ex-strong">{log.result}</td>
+                    <td className="ex-small">{log.owner}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {data.changes.map(log => (
-                    <tr key={log.id} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{log.date}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-slate-600">
-                        <span className={`px-2 py-1 rounded ${log.type === '障害対応' ? 'bg-red-50 text-red-600' : 'bg-slate-100'}`}>{log.type}</span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">{log.content}</td>
-                      <td className="px-4 py-3 text-center"><span className="text-green-600 text-xs font-bold border border-green-200 bg-green-50 px-2 py-0.5 rounded">{log.result}</span></td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{log.owner}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-8 text-xs text-slate-500"><p>※ 本リストには、システム構成に影響を与える変更およびセキュリティパッチ適用のみを記載しています。</p></div>
-          </div>
+                ))}
+              </tbody>
+            </table>
+            <div className="ex-note mt-4">※ 本表には、システム構成に影響する変更およびセキュリティパッチの適用のみを記載しています。</div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.10 Intelligence */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm]">
-            <PageHeader meta={data.meta} pageNum={10} totalPages={totalPages} title="Global Intelligence" />
-            <SectionHeader number="7" title="Global Security Intelligence" subTitle="Threat Trends & Risk Analysis" />
-            <div className="space-y-6">
-              {data.news.map(item => (
-                <div key={item.id} className="bg-white border border-slate-200 p-6 rounded-lg shadow-sm break-inside-avoid">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Globe className="w-4 h-4 text-blue-500" />{item.title}</h4>
-                    <span className="text-xs text-slate-400 whitespace-nowrap bg-slate-50 px-2 py-1 rounded">{item.date} | {item.source}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 mb-4 leading-relaxed">{item.content}</p>
-                  <div className="flex items-start gap-3 bg-red-50 p-4 rounded-lg border border-red-100">
-                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-bold text-red-800 uppercase mb-1">Impact & Mitigation</div>
-                      <p className="text-sm font-medium text-red-700 leading-relaxed">{item.impact}</p>
-                    </div>
-                  </div>
-                </div>
+          <PageFrame meta={data.meta} pageNum={10} totalPages={totalPages} section="Threat Intelligence">
+            <SectionHeader number="08" title="脅威インテリジェンス" subTitle="Global Threat Intelligence" />
+            <div className="ex-intel">
+              {data.news.map((item, i) => (
+                <article key={item.id}>
+                  <div className="ex-intel-no">Intel {String(i + 1).padStart(2, '0')}</div>
+                  <h4>{item.title}</h4>
+                  <div className="ex-note">{[item.date, item.source].filter(Boolean).join('\u3000｜\u3000')}</div>
+                  <p>{item.content}</p>
+                  <div className="ex-impact"><div className="ex-kicker">Impact &amp; Mitigation</div><p>{item.impact}</p></div>
+                </article>
               ))}
             </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.11 Roadmap */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[15mm] flex flex-col justify-between min-h-[297mm]">
-            <div>
-              <PageHeader meta={data.meta} pageNum={11} totalPages={totalPages} title="Strategic Roadmap" />
-              <SectionHeader number="8" title="戦略的ロードマップ＆提言" subTitle="Future Strategy & Recommendations" />
-              <div className="mb-10">
-                <div className="flex items-center gap-2 mb-4"><List className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-bold text-slate-500 uppercase">Next Month's Focus</h3></div>
-                <div className="bg-white border-l-4 border-blue-500 p-6 shadow-sm rounded-r-lg whitespace-pre-wrap text-sm leading-7 text-slate-700">{data.roadmap.nextMonth}</div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-4"><TrendingUp className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-bold text-slate-500 uppercase">Strategic Advice</h3></div>
-                <div className="bg-slate-800 text-slate-200 p-8 rounded-xl shadow-lg whitespace-pre-wrap text-sm leading-7">{data.roadmap.strategicAdvice}</div>
-              </div>
+          <PageFrame meta={data.meta} pageNum={11} totalPages={totalPages} section="Strategic Roadmap">
+            <SectionHeader number="09" title="戦略的ロードマップ＆提言" subTitle="Strategy & Recommendations" />
+            <SubHeading>次月の重点施策</SubHeading>
+            <div className="ex-prose ex-focus">{data.roadmap.nextMonth}</div>
+            <div className="ex-advice">
+              <div className="ex-kicker ex-kicker-gold">Strategic Advisory</div>
+              <div className="ex-advice-title">戦略的提言</div>
+              <div className="ex-prose">{data.roadmap.strategicAdvice}</div>
             </div>
-            <div className="mt-12 pt-8 border-t border-slate-200 text-center">
-              <p className="text-slate-400 text-xs mb-2">End of Report</p>
-              <div className="inline-block bg-slate-100 px-4 py-2 rounded-full text-slate-500 text-xs font-bold">Generated by {data.meta.companyName} Reporting System</div>
+            <div className="ex-end">
+              <span />— End of Report —<span />
             </div>
-          </div>
+          </PageFrame>
           <div className="page-break" />
 
           {/* P.12 Invoice */}
-          <div className="report-page bg-white shadow-2xl mx-auto mb-8 print:mb-0 print:shadow-none p-[13mm] flex flex-col min-h-[297mm] text-slate-800">
-            <div className="flex justify-between items-start border-b-4 border-slate-800 pb-6 mb-8">              <div>
-                <div className="text-4xl font-black text-slate-900 tracking-tight mb-2">INVOICE</div>
-                <div className="text-xs text-slate-500 font-bold uppercase tracking-widest">{data.meta.companyName}</div>
+          <section className="report-page ex-page ex-invoice">
+            <div className="ex-inv-head">
+              <div>
+                <div className="ex-inv-title">INVOICE</div>
+                <div className="ex-kicker">Statement of Services</div>
               </div>
-              <div className="text-right flex flex-col items-end">
-                {data.invoice.logoSrc
-                  ? <img src={data.invoice.logoSrc} alt="Logo" className="h-16 object-contain mb-2" />
-                  : <div className="text-5xl font-black text-slate-100 tracking-widest absolute top-[13mm] right-[13mm] pointer-events-none select-none opacity-20 -rotate-12">KAKEHASHI</div>
-                }
-                <div className="text-sm font-bold mt-2">{data.invoice.senderName}</div>
-                <div className="text-xs text-slate-500 whitespace-pre-wrap text-right leading-tight">{data.invoice.senderDetails}</div>
+              <div className="ex-inv-from">
+                {data.invoice.logoSrc ? <img src={data.invoice.logoSrc} alt="Logo" className="ex-inv-logo" /> : <Monogram name={data.invoice.senderName || data.meta.companyName} size={44} />}
+                <div className="ex-strong mt-2">{data.invoice.senderName}</div>
+                <div className="ex-small ex-pre">{data.invoice.senderDetails}</div>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-2">Bill To</div>
-                <div className="font-bold text-lg mb-1">{data.invoice.clientName}</div>
-                <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{data.invoice.clientDetails}</div>
+            <div className="ex-inv-meta">
+              <div>
+                <div className="ex-kicker">Bill To</div>
+                <div className="ex-inv-client">{data.invoice.clientName}</div>
+                <div className="ex-small ex-pre">{data.invoice.clientDetails}</div>
               </div>
-              <div className="space-y-4">
-                {[{ label: 'Invoice No', value: data.invoice.invNo }, { label: 'Issue Date', value: data.invoice.invDate }, { label: 'Due Date', value: data.invoice.dueDate }].map((row, i) => (
-                  <div key={i} className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase">{row.label}</span>
-                    <span className="font-mono font-bold">{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-grow">
-              <table className="w-full mb-8">
-                <thead className="bg-slate-100 text-slate-600 text-xs uppercase font-black">
-                  <tr>
-                    <th className="py-3 px-4 text-left rounded-l">Description</th>
-                    <th className="py-3 px-4 text-right w-20">Qty</th>
-                    <th className="py-3 px-4 text-right w-32">Unit Price</th>
-                    <th className="py-3 px-4 text-right w-32 rounded-r">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm divide-y divide-slate-100">
-                  {data.invoice.items.map(item => (
-                    <tr key={item.id}>
-                      <td className="py-3 px-4 font-medium">{item.desc}</td>
-                      <td className="py-3 px-4 text-right font-mono">{item.qty}</td>
-                      <td className="py-3 px-4 text-right font-mono">{fmtMoney(item.unit, data.invoice.currency)}</td>
-                      <td className="py-3 px-4 text-right font-mono font-bold">{fmtMoney(item.qty * item.unit, data.invoice.currency)}</td>
-                    </tr>
+              <table className="ex-inv-info">
+                <tbody>
+                  {[{ l: 'Invoice No.', v: data.invoice.invNo }, { l: 'Issue Date', v: data.invoice.invDate }, { l: 'Due Date', v: data.invoice.dueDate }, { l: 'Currency', v: data.invoice.currency }].map((r, i) => (
+                    <tr key={i}><th>{r.l}</th><td>{r.v}</td></tr>
                   ))}
                 </tbody>
               </table>
             </div>
-
-            <div className="grid grid-cols-2 gap-12 items-end border-t border-slate-200 pt-8">
+            <table className="ex-ledger ex-inv-items">
+              <thead><tr><th>Description</th><th className="r" style={{ width: '10%' }}>Qty</th><th className="r" style={{ width: '20%' }}>Unit Price</th><th className="r" style={{ width: '20%' }}>Amount</th></tr></thead>
+              <tbody>
+                {data.invoice.items.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.desc}</td>
+                    <td className="r ex-num">{item.qty}</td>
+                    <td className="r ex-num">{fmtMoney(item.unit, data.invoice.currency)}</td>
+                    <td className="r ex-num ex-strong">{fmtMoney(item.qty * item.unit, data.invoice.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="ex-inv-bottom">
               <div>
-                <div className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4" /> Bank Transfer Info</div>
-                <div className="bg-slate-50 p-4 rounded border border-slate-200 text-sm space-y-1">
-                  {[
-                    { l: 'Bank', v: data.invoice.bankName }, { l: 'Branch', v: data.invoice.bankBranch },
-                    { l: 'SWIFT/BIC', v: data.invoice.bankSwift }, { l: 'Type', v: data.invoice.bankType },
-                    { l: 'Account No', v: data.invoice.bankNo }, { l: 'Holder', v: data.invoice.bankHolder },
-                  ].filter(r => r.v).map((row, i) => (
-                    <div key={i} className="flex justify-between">
-                      <span className="text-slate-500">{row.l}</span>
-                      <span className="font-bold font-mono">{row.v}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 text-xs text-slate-500 bg-yellow-50 p-2 rounded border border-yellow-100">Note: {data.invoice.notes}</div>
+                <div className="ex-kicker">Remittance Details</div>
+                <table className="ex-inv-bank">
+                  <tbody>
+                    {[
+                      { l: 'Bank', v: data.invoice.bankName }, { l: 'Branch', v: data.invoice.bankBranch },
+                      { l: 'SWIFT / BIC', v: data.invoice.bankSwift }, { l: 'Account Type', v: data.invoice.bankType },
+                      { l: 'Account No.', v: data.invoice.bankNo }, { l: 'Account Name', v: data.invoice.bankHolder },
+                    ].filter(r => r.v).map((r, i) => <tr key={i}><th>{r.l}</th><td>{r.v}</td></tr>)}
+                  </tbody>
+                </table>
+                {data.invoice.notes && <div className="ex-small ex-pre mt-4">{data.invoice.notes}</div>}
               </div>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="font-bold text-slate-500">Subtotal</span>
-                  <span className="font-mono font-bold">{fmtMoney(invoiceCalc.subtotal, data.invoice.currency)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="font-bold text-slate-500">Tax ({data.invoice.taxRate}%)</span>
-                  <span className="font-mono font-bold">{fmtMoney(invoiceCalc.tax, data.invoice.currency)}</span>
-                </div>
-                <div className="flex justify-between text-xl border-t-2 border-slate-800 pt-3">
-                  <span className="font-black text-slate-900">TOTAL</span>
-                  <span className="font-mono font-black text-blue-600">{fmtMoney(invoiceCalc.total, data.invoice.currency)}</span>
-                </div>
-              </div>
+              <table className="ex-inv-total">
+                <tbody>
+                  <tr><th>Subtotal</th><td>{fmtMoney(invoiceCalc.subtotal, data.invoice.currency)}</td></tr>
+                  <tr><th>Tax ({data.invoice.taxRate}%)</th><td>{fmtMoney(invoiceCalc.tax, data.invoice.currency)}</td></tr>
+                  <tr className="is-total"><th>Total Due</th><td>{fmtMoney(invoiceCalc.total, data.invoice.currency)}</td></tr>
+                </tbody>
+              </table>
             </div>
-
-            <div className="mt-auto pt-8 border-t border-slate-200 flex justify-between items-center text-xs text-slate-400">
-              <div>{data.invoice.senderName}</div>
-              <div>Generated by KAKEHASHI System</div>
-            </div>
-          </div>
+            <footer className="ex-foot">
+              <span>{data.invoice.senderName}</span>
+              <span>Thank you for your continued trust.</span>
+              <span className="ex-pg">{String(totalPages).padStart(2, '0')} <em>/</em> {String(totalPages).padStart(2, '0')}</span>
+            </footer>
+          </section>
 
         </div>
       </main>
 
       <style>{`
         .report-page { width: 210mm; min-height: 297mm; }
+        @media print { #root { max-width: none; padding: 0; margin: 0; } .ex-root { padding: 0 !important; margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
         @media print {
           @page { margin: 0; size: A4; }
-          body { background: white; -webkit-print-color-adjust: exact; }
-          .report-page { margin: 0; width: 100%; min-height: auto; page-break-after: auto; break-after: auto; border: none; box-shadow: none; }
-          .page-break { page-break-after: always; break-after: page; height: 0; display: block; }
+          html, body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .report-page { margin: 0 !important; width: 210mm; height: 297mm; min-height: 297mm; box-shadow: none !important; break-after: page; page-break-after: always; }
+          .report-page:last-of-type { break-after: auto; page-break-after: auto; }
+          .page-break { display: none; }
         }
-        svg { print-color-adjust: exact; }
       `}</style>
     </div>
   );
